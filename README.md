@@ -52,14 +52,18 @@ project/
     └── package.json         # Frontend manifest
 ```
 
----
-
 ## Database Connection
-The application is pre-configured to connect to a **live PostgreSQL instance hosted on Neon.tech**:
-```
-postgresql://neondb_owner:npg_lu1wE4KRaXrb@ep-jolly-dawn-apzjtjtv-pooler.c-7.us-east-1.aws.neon.tech/neondb?sslmode=require
-```
+The application is designed to connect to a **PostgreSQL database**. 
+
+To connect:
+1. Open the `.env` file in the `backend/` directory.
+2. Define your PostgreSQL connection string in the `DATABASE_URL` variable:
+   ```ini
+   DATABASE_URL=postgresql://<username>:<password>@<host>/<database>?sslmode=require
+   ```
+
 Upon server startup, Sequelize automatically syncs models and creates the necessary database schemas, foreign key constraints (Cascade On Delete), and optimization indexes on `users(email)` and `tasks(userId, status)`.
+
 
 ---
 
