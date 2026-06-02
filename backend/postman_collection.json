@@ -1,0 +1,574 @@
+{
+  "info": {
+    "_postman_id": "task-manager-api-collection",
+    "name": "Task Manager API",
+    "description": "A comprehensive Postman collection for the Task Manager REST API. Includes authentication, task CRUD, and admin operations.\n\n## Setup\n1. Import this collection into Postman\n2. Set `baseUrl` variable to `http://localhost:5000/api/v1`\n3. Register a user and login to get tokens\n4. The login request auto-sets the `accessToken` variable\n\n## Auth Flow\n- Register → Login → Use token for protected routes\n- Token is automatically set via pre-request scripts",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:5000/api/v1",
+      "type": "string"
+    },
+    {
+      "key": "accessToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refreshToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "taskId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "description": "Authentication endpoints for user registration, login, token refresh, and profile management.",
+      "item": [
+        {
+          "name": "Register",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Doe\",\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePass123!\",\n  \"confirmPassword\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/register",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "register"]
+            },
+            "description": "Register a new user account. Passwords must be at least 8 characters with uppercase, lowercase, and numbers."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.tokens) {",
+                  "        pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', response.data.tokens.refreshToken);",
+                  "    }",
+                  "    if (response.data && response.data.user) {",
+                  "        pm.collectionVariables.set('userId', response.data.user.id);",
+                  "    }",
+                  "    pm.test('User registered successfully', () => {",
+                  "        pm.expect(response.status).to.eql('success');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"password\": \"SecurePass123!\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/login",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "login"]
+            },
+            "description": "Login with email and password to receive JWT access and refresh tokens."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.tokens) {",
+                  "        pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
+                  "        pm.collectionVariables.set('refreshToken', response.data.tokens.refreshToken);",
+                  "        console.log('✅ Access token saved to collection variables');",
+                  "    }",
+                  "    if (response.data && response.data.user) {",
+                  "        pm.collectionVariables.set('userId', response.data.user.id);",
+                  "    }",
+                  "    pm.test('Login successful', () => {",
+                  "        pm.expect(response.status).to.eql('success');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refreshToken\": \"{{refreshToken}}\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/auth/refresh-token",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "refresh-token"]
+            },
+            "description": "Get a new access token using a valid refresh token."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.tokens) {",
+                  "        pm.collectionVariables.set('accessToken', response.data.tokens.accessToken);",
+                  "        if (response.data.tokens.refreshToken) {",
+                  "            pm.collectionVariables.set('refreshToken', response.data.tokens.refreshToken);",
+                  "        }",
+                  "        console.log('✅ Tokens refreshed successfully');",
+                  "    }",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/auth/profile",
+              "host": ["{{baseUrl}}"],
+              "path": ["auth", "profile"]
+            },
+            "description": "Get the currently authenticated user's profile information."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Profile retrieved successfully', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.data.user).to.have.property('id');",
+                  "    pm.expect(response.data.user).to.have.property('email');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tasks",
+      "description": "Task CRUD operations. All endpoints require authentication. Users can only access their own tasks; admins can access all tasks.",
+      "item": [
+        {
+          "name": "Create Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Complete project documentation\",\n  \"description\": \"Write comprehensive API documentation including all endpoints, request/response formats, and authentication flow.\",\n  \"status\": \"pending\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"]
+            },
+            "description": "Create a new task. Status defaults to 'pending' if not specified."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    if (response.data && response.data.task) {",
+                  "        pm.collectionVariables.set('taskId', response.data.task.id);",
+                  "        console.log('✅ Task ID saved:', response.data.task.id);",
+                  "    }",
+                  "    pm.test('Task created successfully', () => {",
+                  "        pm.expect(response.status).to.eql('success');",
+                  "        pm.expect(response.data.task).to.have.property('id');",
+                  "        pm.expect(response.data.task.title).to.eql('Complete project documentation');",
+                  "    });",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get All Tasks",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number (default: 1)"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page (default: 10, max: 100)"
+                },
+                {
+                  "key": "status",
+                  "value": "pending",
+                  "description": "Filter by status: pending, in-progress, completed",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "documentation",
+                  "description": "Search by title (case-insensitive)",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Get all tasks with pagination. Users see only their own tasks. Admins see all tasks. Supports filtering by status and searching by title."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Tasks retrieved successfully', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.data).to.have.property('tasks');",
+                  "    pm.expect(response.data).to.have.property('pagination');",
+                  "    pm.expect(response.data.pagination).to.have.property('total');",
+                  "    pm.expect(response.data.pagination).to.have.property('totalPages');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get Task By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Get a specific task by its UUID. Users can only access their own tasks. Admins can access any task."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Task retrieved successfully', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.data.task).to.have.property('id');",
+                  "    pm.expect(response.data.task).to.have.property('title');",
+                  "    pm.expect(response.data.task).to.have.property('status');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Update Task",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Complete project documentation (Updated)\",\n  \"description\": \"Updated: Write comprehensive API documentation with examples and error codes.\",\n  \"status\": \"in-progress\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Update a task by ID. At least one field must be provided. Users can only update their own tasks."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Task updated successfully', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.message).to.eql('Task updated successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Delete Task",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/tasks/{{taskId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["tasks", "{{taskId}}"]
+            },
+            "description": "Delete a task by ID. Users can only delete their own tasks. Admins can delete any task."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Task deleted successfully', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.message).to.eql('Task deleted successfully');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Admin",
+      "description": "Admin-only endpoints. Requires admin role authentication.",
+      "item": [
+        {
+          "name": "Get All Users",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users?page=1&limit=10",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users"],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Page number"
+                },
+                {
+                  "key": "limit",
+                  "value": "10",
+                  "description": "Items per page"
+                }
+              ]
+            },
+            "description": "Get a paginated list of all registered users. Admin only."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Users list retrieved', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.data).to.have.property('users');",
+                  "    pm.expect(response.data).to.have.property('pagination');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Get User By ID",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/users/{{userId}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "users", "{{userId}}"]
+            },
+            "description": "Get detailed user information including their tasks. Admin only."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('User details retrieved', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.data.user).to.have.property('id');",
+                  "    pm.expect(response.data.user).to.have.property('tasks');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dashboard Stats",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{accessToken}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/admin/dashboard",
+              "host": ["{{baseUrl}}"],
+              "path": ["admin", "dashboard"]
+            },
+            "description": "Get dashboard statistics including total users, total tasks, and tasks grouped by status. Admin only."
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "pm.test('Dashboard stats retrieved', () => {",
+                  "    pm.expect(pm.response.code).to.eql(200);",
+                  "    const response = pm.response.json();",
+                  "    pm.expect(response.status).to.eql('success');",
+                  "    pm.expect(response.data).to.have.property('totalUsers');",
+                  "    pm.expect(response.data).to.have.property('totalTasks');",
+                  "    pm.expect(response.data).to.have.property('tasksByStatus');",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
